@@ -1,7 +1,7 @@
 /*
   Date Written: February 2015
   Written By  : Scott E. Willson (boweeble@gmail.com)
-                My Github: 
+                My Github: https://github.com/boweeble/Buildlog.net-2.x-DIY-Laser
                 My Build : http://www.buildlog.net/forum/viewtopic.php?f=16&t=2650
                 
                 Pieces taken from and initial idea of Scott Shwarts
@@ -23,10 +23,9 @@
 #include <SimpleTimer.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <EEPROM.h>
+#include <EEPROMex.h>
 #include "Config.h"
 #include "Screen.h"
-#include "Memory.h"
 //#include "Sound.h"
 
 // useful defines
@@ -327,6 +326,7 @@ void process() {
       switch (index) {
         case 0:
           // Done Button
+          saveSettings();  // Save settings to EEPROM
           screenNo = 0;
           drawScreen();
           for(int i = 0; i<4; i++) { prev_vals[i] = 9999; }  // reset sensor values to force refresh
@@ -916,27 +916,36 @@ void loadSettings() {
   // Validate memory settings otherwise use the defaults  
   boolean validChecksum = true;
   for(int i = 0; i < 6; i++) {
-    if (readEeprom(i) != checksum[i]) { validChecksum = false; }
+    if (EEPROM.readByte(i) != checksum[i]) { validChecksum = false; }
   }
   
   if(validChecksum) {
     
-    if(readEeprom(6) == 1) { coverDisable = true; } else { coverDisable = false; }
-    useCelcius   = readEeprom(7);
-    useLiters    = readEeprom(8);
-    EEPROM_readAnything(9, maxInletTemp);
-    EEPROM_readAnything(13, minFlowRate);
-                  
+    if(EEPROM.readByte(6) == 0) { coverDisable = false; } else { coverDisable = true; }
+    if(EEPROM.readByte(7) == 0) { useCelcius = false; } else { useCelcius = true; }
+    if(EEPROM.readByte(8) == 0) { useLiters = false; } else { useLiters = true; }
+    maxInletTemp = EEPROM.readFloat(9);
+    minFlowRate = EEPROM.readFloat(13);
+
   }
  
 }
-/*void saveSettings(boolean coverDisable, boolean useCelcius, boolean useLiters, float maxInletTemp, float minFlowRate){
+
+void saveSettings(){
+  byte checksum[6] = {83, 87, 80, 76, 76, 67};
+
+  // Write a checksum
+  for(int i = 0; i < 6; i++) {
+    EEPROM.writeByte(i,checksum[i]);
+  }
   
+  if(coverDisable) { EEPROM.writeByte(6,1); } else { EEPROM.writeByte(6,0); }
+  if(useCelcius) { EEPROM.writeByte(7,1); } else { EEPROM.writeByte(7,0); }
+  if(useLiters) { EEPROM.writeByte(8,1); } else { EEPROM.writeByte(8,0); }
+
+  EEPROM.writeFloat(9, maxInletTemp);
+  EEPROM.writeFloat(13, minFlowRate);
+
 }
-
-void writeAddress(int address, byte val) {
-  EEPROM.write(address,val);
-}*/
-
 
 
